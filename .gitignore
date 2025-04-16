@@ -67,3 +67,5 @@ dist/
 # ✅ KEEP this in source control, so remove from ignore
 # src/Infrastructure/
 
+ssh_key
+ssh_key.pub

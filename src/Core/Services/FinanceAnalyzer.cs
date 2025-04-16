@@ -1,4 +1,3 @@
-// src/Core/Services/FinanceAnalyzer.cs
 using System.Globalization;
 using CsvHelper;
 using Core.Models;
@@ -6,9 +5,15 @@ using Core.Interfaces;
 
 namespace Core.Services
 {
-
     public class FinanceAnalyzer : IFinanceAnalyzer
     {
+        private readonly ITransactionCategorizer _aiCategorizer;
+
+        public FinanceAnalyzer(ITransactionCategorizer aiCategorizer)
+        {
+            _aiCategorizer = aiCategorizer;
+        }
+
         private readonly CategoryMapper _categoryMapper = new CategoryMapper();
 
         public async Task<TransactionAnalysis> AnalyzeTransactionsAsync(Stream csvStream)
@@ -16,9 +21,9 @@ namespace Core.Services
             using var reader = new StreamReader(csvStream);
 
             // Skip header lines
-            await reader.ReadLineAsync(); // Account name
-            await reader.ReadLineAsync(); // Account number
-            await reader.ReadLineAsync(); // Date range
+            // await reader.ReadLineAsync(); // Account name
+            // await reader.ReadLineAsync(); // Account number
+            // await reader.ReadLineAsync(); // Date range
 
             using var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -38,6 +43,16 @@ namespace Core.Services
                     try
                     {
                         decimal amount = 0;
+
+
+                        // Original Description Amount  Type Parent Category Category    Account Tags    
+
+                        var amt = csv.GetField("Amount")?.Trim();
+                        if (!string.IsNullOrEmpty(amt))
+                        {
+                            amount = decimal.Parse(amt, NumberStyles.Currency);
+                        }
+
                         var debitStr = csv.GetField("Amount Debit")?.Trim();
                         if (!string.IsNullOrEmpty(debitStr))
                         {
@@ -51,21 +66,37 @@ namespace Core.Services
                         }
 
                         var description = csv.GetField("Description")?.Replace("\"", "").Trim() ?? "";
+                        var memo = csv.GetField("Memo")?.Replace("\"", "").Trim() ?? "";
                         var balanceStr = csv.GetField("Balance")?.Trim().Replace("\"", "");
+                        var checkNumber = csv.GetField("Check Number")?.Trim().Replace("\"", "").TrimStart('0');
 
-                        if (decimal.TryParse(balanceStr, NumberStyles.Currency, CultureInfo.InvariantCulture, out decimal balance))
+                        var parentCategory = csv.GetField("Parent Category")?.Replace("\"", "").Trim() ?? "";
+                        if (!string.IsNullOrEmpty(parentCategory))
                         {
-                            var transaction = new Transaction
-                            {
-                                Date = DateTime.Parse(csv.GetField("Date")),
-                                Description = description,
-                                Amount = amount,
-                                Balance = balance,
-                                CategoryId = DetermineCategoryId(description, amount)
-                            };
-
-                            transactions.Add(transaction);
+                            description = parentCategory.ToLower().Split(' ')[0];
                         }
+
+                        var (categoryId, subcategory) = await _aiCategorizer.CategorizeSingleTransactionAsync(description, amount);
+
+                        decimal balance = 0;
+                        if (!string.IsNullOrEmpty(balanceStr) && decimal.TryParse(balanceStr, NumberStyles.Currency, CultureInfo.InvariantCulture, out var parsedBalance))
+                        {
+                            balance = parsedBalance;
+                        }
+
+                        var transaction = new Transaction
+                        {
+                            Date = DateTime.Parse(csv.GetField("Date")),
+                            Description = description,
+                            Amount = amount,
+                            Balance = balance,
+                            CategoryId = categoryId,
+                            Memo = memo,
+                            CheckNumber = checkNumber,
+                            Subcategory = subcategory
+                        };
+
+                        transactions.Add(transaction);
                     }
                     catch (Exception ex)
                     {
@@ -117,7 +148,23 @@ namespace Core.Services
             return Task.FromResult(predictions);
         }
 
-        private string DetermineCategoryId(string description, decimal amount)
+        private async Task<string> DetermineCategoryId(string description, decimal amount)
+        {
+            try
+            {
+                var (categoryId, subcategory) = await _aiCategorizer.CategorizeSingleTransactionAsync(description, amount);
+                Console.WriteLine($"AI categorized '{description}' as '{categoryId}' (subcategory: {subcategory})");
+                return categoryId;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"AI categorization failed, using fallback: {ex.Message}");
+                // Fallback to basic categorization
+                return BasicCategorization(description);
+            }
+        }
+
+        private string BasicCategorization(string description)
         {
             description = description.ToLower();
             string categoryId;
@@ -169,7 +216,6 @@ namespace Core.Services
                 .ToList();
         }
 
-        // In FinanceAnalyzer.cs, update the insights generation:
         private List<string> GenerateInsights(List<Transaction> transactions)
         {
             var insights = new List<string>();

@@ -8,8 +8,10 @@ namespace Core.Models
         public string Description { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public string CategoryId { get; set; } = string.Empty;
+        public string Subcategory { get; set; } = string.Empty;
         public decimal Balance { get; set; }
         public string? Memo { get; set; }
         public bool IsCredit => Amount > 0;
+        public string? CheckNumber { get; set; }
     }
 }

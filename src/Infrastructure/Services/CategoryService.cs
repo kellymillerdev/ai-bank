@@ -24,7 +24,10 @@ namespace Infrastructure.Services
                 Category.CreateSystem("utilities"),
                 Category.CreateSystem("cash-withdrawal"),
                 Category.CreateSystem("transfers"),
-                Category.CreateSystem("other")
+                Category.CreateSystem("other"),
+                Category.CreateSystem("visa-card"),
+                Category.CreateSystem("check"),
+                Category.CreateSystem("fitness")
             };
 
             foreach (var category in systemCategories)

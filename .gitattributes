@@ -1,2 +1,55 @@
-# Handle line endings automatically
+# Set default behavior to automatically normalize line endings
 * text=auto
+
+# C# source files
+*.cs text diff=csharp
+
+# Scripts
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Web files
+*.html text diff=html
+*.htm text diff=html
+*.css text diff=css
+*.js text
+*.ts text
+*.tsx text
+*.json text
+*.jsx text
+
+# Docker
+*.dockerfile text
+Dockerfile text
+
+# VS files
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.vbproj text eol=crlf
+*.vcxproj text eol=crlf
+*.vcproj text eol=crlf
+*.dbproj text eol=crlf
+*.fsproj text eol=crlf
+*.lsproj text eol=crlf
+*.wixproj text eol=crlf
+*.modelproj text eol=crlf
+*.sqlproj text eol=crlf
+
+# Graphics
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary

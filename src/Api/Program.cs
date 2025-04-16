@@ -13,6 +13,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IFinanceAnalyzer, FinanceAnalyzer>();
 builder.Services.AddSingleton<ITransactionStore, TransactionStore>();
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ITransactionCategorizer, TransactionCategorizer>();
 
 // Add CORS
 builder.Services.AddCors(options =>
